@@ -18,15 +18,13 @@ import common
 import re
 
 def FullOTA_InstallEnd(info):
-  input_zip = info.input_zip
   OTA_UpdateFirmware(info)
-  OTA_InstallEnd(info, input_zip)
+  OTA_InstallEnd(info)
   return
 
 def IncrementalOTA_InstallEnd(info):
-  input_zip = info.target_zip
   OTA_UpdateFirmware(info)
-  OTA_InstallEnd(info, input_zip)
+  OTA_InstallEnd(info)
   return
 
 def OTA_UpdateFirmware(info):
@@ -62,19 +60,25 @@ def OTA_UpdateFirmware(info):
   info.script.AppendExtra('package_extract_file("install/firmware-update/xbl.elf", "/dev/block/bootdevice/by-name/xblbak");')
   info.script.AppendExtra('package_extract_file("install/firmware-update/xbl_config.elf", "/dev/block/bootdevice/by-name/xbl_config");')
 
-def AddImage(info, input_zip, basename, dest):
-  name = basename
-  path = "IMAGES/" + name
-  if path not in input_zip.namelist():
+def AddImage(info, dir, basename, dest):
+  path = dir + "/" + basename
+  if path not in info.input_zip.namelist():
     return
 
-  data = input_zip.read(path)
-  common.ZipWriteStr(info.output_zip, name, data)
+  data = info.input_zip.read(path)
+  common.ZipWriteStr(info.output_zip, basename, data)
   info.script.Print("Patching {} image unconditionally...".format(dest.split('/')[-1]))
-  info.script.AppendExtra('package_extract_file("%s", "%s");' % (name, dest))
+  info.script.AppendExtra('package_extract_file("%s", "%s");' % (basename, dest))
 
-def OTA_InstallEnd(info, input_zip):
-  AddImage(info, input_zip, "vbmeta.img", "/dev/block/bootdevice/by-name/vbmeta")
-  AddImage(info, input_zip, "vbmeta_system.img", "/dev/block/bootdevice/by-name/vbmeta_system")
-  AddImage(info, input_zip, "dtbo.img", "/dev/block/bootdevice/by-name/dtbo")
+def FullOTA_InstallBegin(info):
+  AddImage(info, "RADIO", "super_dummy.img", "/tmp/super_dummy.img");
+  info.script.AppendExtra('package_extract_file("install/bin/flash_super_dummy.sh", "/tmp/flash_super_dummy.sh");')
+  info.script.AppendExtra('set_metadata("/tmp/flash_super_dummy.sh", "uid", 0, "gid", 0, "mode", 0755);')
+  info.script.AppendExtra('run_program("/tmp/flash_super_dummy.sh");')
+  return
+
+def OTA_InstallEnd(info):
+  AddImage(info, "IMAGES", "vbmeta.img", "/dev/block/bootdevice/by-name/vbmeta")
+  AddImage(info, "IMAGES", "vbmeta_system.img", "/dev/block/bootdevice/by-name/vbmeta_system")
+  AddImage(info, "IMAGES", "dtbo.img", "/dev/block/bootdevice/by-name/dtbo")
   return
