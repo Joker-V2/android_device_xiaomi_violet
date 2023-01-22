@@ -54,6 +54,9 @@ debug.hwui.skia_atrace_enabled=false
 # Disable vsync for cpu rendered apps
 debug.cpurend.vsync=false
 
+# fastbootd
+ro.fastbootd.available=true
+
 # Graphics
 debug.cpurend.vsync=false
 debug.hwui.renderer=skiagl
